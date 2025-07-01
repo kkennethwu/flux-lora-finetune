@@ -18,7 +18,8 @@ accelerate launch train_control_lora_flux.py \
   --report_to="wandb" \
   --lr_scheduler="constant" \
   --lr_warmup_steps=0 \
-  --max_train_steps=5000 \
+  --max_train_steps=500 \
+  --validation_steps=50 \
   --validation_image="openpose.png" \
   --validation_prompt="A couple, 4k photo, highly detailed" \
   --offload \
