@@ -44,9 +44,8 @@ from torchvision import transforms
 from tqdm.auto import tqdm
 
 import diffusers
-from diffusers import AutoencoderKL, FlowMatchEulerDiscreteScheduler, FluxTransformer2DModel
+from diffusers import AutoencoderKL, FlowMatchEulerDiscreteScheduler, FluxFillPipeline, FluxTransformer2DModel
 from diffusers.optimization import get_scheduler
-from diffusers.pipelines.flux import FluxFillPipeline
 from diffusers.training_utils import (
     cast_training_params,
     compute_density_for_timestep_sampling,
@@ -618,7 +617,7 @@ def parse_args(input_args=None):
     parser.add_argument(
         "--mask_image_column",
         type=str,
-        default="mask_image",
+        default="mask",
         help="The column of the dataset containing the mask image.",
     )
     parser.add_argument(
@@ -782,6 +781,14 @@ def prepare_train_dataset(dataset, accelerator, args):
         ]
     )
 
+    mask_transforms = transforms.Compose(
+        [
+            transforms.Resize((args.resolution, args.resolution), interpolation=transforms.InterpolationMode.BILINEAR),
+            transforms.ToTensor(),
+            # transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        ]
+    )
+
     def preprocess_train(examples):
         images = [
             (image.convert("RGB") if not isinstance(image, str) else Image.open(image).convert("RGB"))
@@ -793,7 +800,7 @@ def prepare_train_dataset(dataset, accelerator, args):
             (image.convert("L") if not isinstance(image, str) else Image.open(image).convert("L"))
             for image in examples[args.mask_image_column]
         ]
-        mask_images = [transforms.ToTensor()(image) for image in mask_images]
+        mask_images = [mask_transforms(image) for image in mask_images]
 
         examples["pixel_values"] = images
         examples["mask_values"] = mask_images
